@@ -144,3 +144,13 @@ export type MemoType =
   | "Mobile payment"
   | "Payment reversal"
   | "Cash payment - import";
+
+export const CustomerTypes = {
+  RESIDENTIAL: "Residential",
+  COMMERCIAL: "Commercial",
+  INDUSTRIAL: "Industrial",
+  PUBLIC_FACILITY: "Public Facility",
+  OTHER: "Other",
+} as const;
+
+export type CustomerType = (typeof CustomerTypes)[keyof typeof CustomerTypes];
