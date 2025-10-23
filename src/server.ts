@@ -2,12 +2,20 @@ import express from "express";
 import dotenv from "dotenv";
 import { env } from "process";
 import { connectToDatabase } from "./configurations/db-config";
+import { getCustomersCount } from "./services/mongodb-service";
 
 dotenv.config();
 
 connectToDatabase();
 
 const app = express();
+
+// getCustomersCount({
+//   utility: "67484e3ee39b649e727b4d8c",
+//   allCustomers: false,
+// }).then((result) => {
+//   console.log(result);
+// });
 
 app.use(express.json());
 

@@ -44,13 +44,15 @@ export type GetMonthlyPaymentTotalsRequest = z.infer<
 export const CustomerCountResponseSchema = z
   .object({
     totalCustomers: z.number(),
-    customerType: z.object({
-      [CustomerTypes.RESIDENTIAL]: z.number(),
-      [CustomerTypes.COMMERCIAL]: z.number(),
-      [CustomerTypes.INDUSTRIAL]: z.number(),
-      [CustomerTypes.PUBLIC_FACILITY]: z.number(),
-      [CustomerTypes.OTHER]: z.number(),
-    }),
+    customerType: z
+      .object({
+        [CustomerTypes.RESIDENTIAL]: z.number(),
+        [CustomerTypes.COMMERCIAL]: z.number(),
+        [CustomerTypes.INDUSTRIAL]: z.number(),
+        [CustomerTypes.PUBLIC_FACILITY]: z.number(),
+        [CustomerTypes.OTHER]: z.number(),
+      })
+      .optional(),
   })
   .strict();
 

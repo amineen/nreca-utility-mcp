@@ -1,10 +1,9 @@
-const { CustomerTypes } = await import("../models/types");
 import CustomerSchema from "../models/CustomerSchema";
 import {
   CustomerCountResponse,
   GetCustomersCountRequest,
 } from "../models/tool-schema";
-import { CustomerType } from "../models/types";
+import { CustomerType, CustomerTypes } from "../models/types";
 
 export const getCustomersCount = async (
   request: GetCustomersCountRequest
@@ -13,16 +12,28 @@ export const getCustomersCount = async (
 
   // Build the match stage
   const matchStage: Record<string, any> = { service_area_id: utility };
-  if (allCustomers !== undefined) {
-    matchStage.active = allCustomers ? undefined : true;
+  if (!allCustomers) {
+    matchStage.active = true;
   }
 
   const aggregationResult = await CustomerSchema.aggregate([
     { $match: matchStage },
     {
+      $addFields: {
+        splitCode: { $split: ["$code", ":"] },
+      },
+    },
+    {
       $group: {
-        _id: "$customer_type",
+        _id: { customer_type: { $arrayElemAt: ["$splitCode", 1] } },
         count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        customer_type: "$_id.customer_type",
+        count: 1,
       },
     },
   ]);
@@ -36,9 +47,9 @@ export const getCustomersCount = async (
     [CustomerTypes.OTHER]: 0,
   };
 
-  aggregationResult.forEach(({ _id, count }) => {
-    if (_id in customerTypeCounts) {
-      customerTypeCounts[_id as CustomerType] = count;
+  aggregationResult.forEach(({ customer_type, count }) => {
+    if (customer_type in customerTypeCounts) {
+      customerTypeCounts[customer_type as CustomerType] = count;
     }
   });
 
