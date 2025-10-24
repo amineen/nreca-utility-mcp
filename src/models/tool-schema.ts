@@ -63,6 +63,7 @@ export const MonthlyPaymentTotalsResponseSchema = z
     customerType: z.enum(
       Object.values(CustomerTypes) as [CustomerType, ...CustomerType[]]
     ),
+    currency: z.string(),
   })
   .strict();
 

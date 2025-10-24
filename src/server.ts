@@ -17,6 +17,15 @@ const app = express();
 //   console.log(result);
 // });
 
+import { getMonthlyPaymentTotals } from "./services/mongodb-service";
+
+getMonthlyPaymentTotals({
+  utility: "67484e3ee39b649e727b4d8c",
+  month: "2025-09",
+}).then((result) => {
+  console.log(result);
+});
+
 app.use(express.json());
 
 const PORT = env.PORT || 8085;

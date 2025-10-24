@@ -2,8 +2,12 @@ import CustomerSchema from "../models/CustomerSchema";
 import {
   CustomerCountResponse,
   GetCustomersCountRequest,
+  GetMonthlyPaymentTotalsRequest,
+  MonthlyPaymentTotalsResponse,
 } from "../models/tool-schema";
 import { CustomerType, CustomerTypes } from "../models/types";
+import PaymentSchema from "../models/PaymentSchema";
+import { Types } from "mongoose";
 
 export const getCustomersCount = async (
   request: GetCustomersCountRequest
@@ -62,4 +66,54 @@ export const getCustomersCount = async (
     totalCustomers,
     customerType: customerTypeCounts,
   };
+};
+
+export const getMonthlyPaymentTotals = async (
+  request: GetMonthlyPaymentTotalsRequest
+): Promise<MonthlyPaymentTotalsResponse[]> => {
+  const { utility, month } = request;
+  const startOfMonthDate = new Date(month + "-01T00:00:00Z");
+  const endOfMonth = new Date(
+    Date.UTC(
+      startOfMonthDate.getUTCFullYear(),
+      startOfMonthDate.getUTCMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    )
+  );
+
+  const aggregationResult = await PaymentSchema.aggregate([
+    {
+      $match: {
+        service_area_id: new Types.ObjectId(utility),
+        timestamp: { $gte: startOfMonthDate, $lt: endOfMonth },
+      },
+    },
+    {
+      $addFields: {
+        splitId: { $split: ["$external_id", "-"] },
+      },
+    },
+    {
+      $group: {
+        _id: { customer_type: { $arrayElemAt: ["$splitId", 0] } },
+        totalAmount: { $sum: { $toDouble: "$amount.value" } },
+        currency: { $first: "$amount.currency" },
+        totalKWh: { $sum: "$amount.kWh" },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        customer_type: "$_id.customer_type",
+        totalAmount: 1,
+        currency: 1,
+        totalKWh: 1,
+      },
+    },
+  ]);
+
+  return aggregationResult;
 };
