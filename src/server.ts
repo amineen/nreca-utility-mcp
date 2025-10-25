@@ -1,6 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
 import { env } from "process";
+import { Server } from "@modelcontextprotocol/sdk/server/index";
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+} from "@modelcontextprotocol/sdk/types";
 import { connectToDatabase } from "./configurations/db-config";
 import { getCustomersCount } from "./services/mongodb-service";
 
@@ -10,23 +15,20 @@ connectToDatabase();
 
 const app = express();
 
-// getCustomersCount({
-//   utility: "67484e3ee39b649e727b4d8c",
-//   allCustomers: false,
-// }).then((result) => {
-//   console.log(result);
-// });
-
-import { getMonthlyPaymentTotals } from "./services/mongodb-service";
-
-getMonthlyPaymentTotals({
-  utility: "67484e3ee39b649e727b4d8c",
-  month: "2025-09",
-}).then((result) => {
-  console.log(result);
-});
-
 app.use(express.json());
+
+const mcpServer = new Server(
+  {
+    name: "NRECA Utility MCP",
+    version: "1.0.0",
+    description: "MCP server for NRECA Utility Platform",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
 
 const PORT = env.PORT || 8085;
 
