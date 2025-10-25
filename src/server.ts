@@ -7,12 +7,18 @@ import {
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types";
 import { connectToDatabase } from "./configurations/db-config";
-import { getCustomersCount } from "./services/mongodb-service";
+import {
+  getCustomersCount,
+  getMonthlyPaymentTotals,
+} from "./services/mongodb-service";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
+  CustomerCountResponseSchema,
   GetCustomersCountSchema,
   GetMonthlyPaymentTotalsSchema,
+  MonthlyPaymentTotalsResponseSchema,
 } from "./models/tool-schema";
+import { ZodError } from "zod";
 
 dotenv.config();
 
@@ -57,6 +63,102 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
       },
     ],
   };
+});
+
+// Helper function to format validation errors
+function formatZodError(error: ZodError): string {
+  return error.errors
+    .map((err) => `${err.path.join(".")}: ${err.message}`)
+    .join("; ");
+}
+
+//Register tool call handler with Zod validation
+mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  try {
+    switch (name) {
+      case "getCustomersCount": {
+        //validate args with zod
+        const validatedArgs = GetCustomersCountSchema.parse(args);
+        //call the service
+        const result = await getCustomersCount(validatedArgs);
+        //validate the outpu with zod
+        const validatedResult = CustomerCountResponseSchema.parse(result);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(validatedResult, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "getMonthlyPaymentTotals": {
+        //validate args with zod
+        const validatedArgs = GetMonthlyPaymentTotalsSchema.parse(args);
+        //call the service
+        const result = await getMonthlyPaymentTotals(validatedArgs);
+        //validate the output with zod
+        const validatedResult =
+          MonthlyPaymentTotalsResponseSchema.parse(result);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(validatedResult, null, 2),
+            },
+          ],
+        };
+      }
+      default:
+        throw new Error(`Unknown tool: ${name}`);
+    }
+  } catch (error) {
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
+      const errorMessage = formatZodError(error);
+      console.error("Validation error:", errorMessage);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                error: "Validation error",
+                details: errorMessage,
+                issues: error.errors,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // Handle other errors
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("Tool execution error:", errorMessage);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              error: errorMessage,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+      isError: true,
+    };
+  }
 });
 
 const PORT = env.PORT || 8085;
