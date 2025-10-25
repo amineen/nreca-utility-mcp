@@ -8,6 +8,11 @@ import {
 } from "@modelcontextprotocol/sdk/types";
 import { connectToDatabase } from "./configurations/db-config";
 import { getCustomersCount } from "./services/mongodb-service";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import {
+  GetCustomersCountSchema,
+  GetMonthlyPaymentTotalsSchema,
+} from "./models/tool-schema";
 
 dotenv.config();
 
@@ -29,6 +34,30 @@ const mcpServer = new Server(
     },
   }
 );
+
+//Register tool list handler with Zod generated schema
+mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: "getCustomersCount",
+        description: "Get the number of customers for a given utility",
+        inputSchema: zodToJsonSchema(GetCustomersCountSchema, {
+          name: "getCustomersCount",
+          $refStrategy: "none",
+        }),
+      },
+      {
+        name: "getMonthlyPaymentTotals",
+        description: "Get the monthly payment totals for a given utility",
+        inputSchema: zodToJsonSchema(GetMonthlyPaymentTotalsSchema, {
+          name: "getMonthlyPaymentTotals",
+          $refStrategy: "none",
+        }),
+      },
+    ],
+  };
+});
 
 const PORT = env.PORT || 8085;
 
