@@ -1,12 +1,13 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import { env } from "process";
 import { Server } from "@modelcontextprotocol/sdk/server/index";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types";
-import { connectToDatabase } from "./configurations/db-config";
+import { connectToDatabase, isDBConnected } from "./configurations/db-config";
 import {
   getCustomersCount,
   getMonthlyPaymentTotals,
@@ -161,13 +162,72 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+//Stateless HTTP endpoint-per-request transport pattern
+app.post("/mcp", async (req: Request, res: Response) => {
+  try {
+    //create a new transport for this request (stateless - no session)
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+
+    //connect the transport to the MCP server
+    await mcpServer.connect(transport);
+
+    //clean up the transport when the request closes
+    req.on("close", async () => {
+      await transport.close();
+    });
+
+    //Handle the request
+    await transport.handleRequest(req, res, req.body);
+  } catch (error) {
+    console.error("Error handling MCP request:", error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+});
+
+// Health check endpoint
+app.get("/health", (_, res: Response) => {
+  res.json({
+    status: "healthy",
+    database: isDBConnected() ? "connected" : "disconnected",
+    server: "NRECA Utility MCP",
+    version: "1.0.0",
+  });
+});
+
 const PORT = env.PORT || 8085;
 
-if (env.NODE_ENV === "development") {
-  console.info(
-    "\x1b[32m%s\x1b[0m",
-    `✅ Server is running on http://localhost:${PORT}`
-  );
+async function startServer() {
+  try {
+    // Connect to MongoDB on startup
+    await connectToDatabase();
+
+    app.listen(PORT, () => {
+      console.info(
+        "\x1b[32m%s\x1b[0m",
+        `✅ Server is running on http://localhost:${PORT}`
+      );
+      console.info(
+        "\x1b[32m%s\x1b[0m",
+        `✅ MCP endpoint: http://localhost:${PORT}/mcp`
+      );
+      console.info(
+        "\x1b[32m%s\x1b[0m",
+        `✅ Health check: http://localhost:${PORT}/health`
+      );
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
 }
+
+startServer();
 
 export default app;
