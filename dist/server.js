@@ -1,24 +1,19 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const process_1 = require("process");
-const index_1 = require("@modelcontextprotocol/sdk/server/index");
-const streamableHttp_1 = require("@modelcontextprotocol/sdk/server/streamableHttp");
-const types_1 = require("@modelcontextprotocol/sdk/types");
-const db_config_1 = require("./configurations/db-config");
-const mongodb_service_1 = require("./services/mongodb-service");
-const zod_to_json_schema_1 = require("zod-to-json-schema");
-const tool_schema_1 = require("./models/tool-schema");
-const zod_1 = require("zod");
-dotenv_1.default.config();
-(0, db_config_1.connectToDatabase)();
-const app = (0, express_1.default)();
-app.use(express_1.default.json());
-const mcpServer = new index_1.Server({
+import express from "express";
+import dotenv from "dotenv";
+import { env } from "process";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { ListToolsRequestSchema, CallToolRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
+import { connectToDatabase, isDBConnected, } from "./configurations/db-config.js";
+import { getCustomersCount, getMonthlyPaymentTotals, } from "./services/mongodb-service.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
+import { CustomerCountResponseSchema, GetCustomersCountSchema, GetMonthlyPaymentTotalsSchema, MonthlyPaymentTotalsResponseSchema, } from "./models/tool-schema.js";
+import { ZodError } from "zod";
+dotenv.config();
+connectToDatabase();
+const app = express();
+app.use(express.json());
+const mcpServer = new Server({
     name: "NRECA Utility MCP",
     version: "1.0.0",
     description: "MCP server for NRECA Utility Platform",
@@ -28,13 +23,13 @@ const mcpServer = new index_1.Server({
     },
 });
 //Register tool list handler with Zod generated schema
-mcpServer.setRequestHandler(types_1.ListToolsRequestSchema, async () => {
+mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
         tools: [
             {
                 name: "getCustomersCount",
                 description: "Get the number of customers for a given utility",
-                inputSchema: (0, zod_to_json_schema_1.zodToJsonSchema)(tool_schema_1.GetCustomersCountSchema, {
+                inputSchema: zodToJsonSchema(GetCustomersCountSchema, {
                     name: "getCustomersCount",
                     $refStrategy: "none",
                 }),
@@ -42,7 +37,7 @@ mcpServer.setRequestHandler(types_1.ListToolsRequestSchema, async () => {
             {
                 name: "getMonthlyPaymentTotals",
                 description: "Get the monthly payment totals for a given utility",
-                inputSchema: (0, zod_to_json_schema_1.zodToJsonSchema)(tool_schema_1.GetMonthlyPaymentTotalsSchema, {
+                inputSchema: zodToJsonSchema(GetMonthlyPaymentTotalsSchema, {
                     name: "getMonthlyPaymentTotals",
                     $refStrategy: "none",
                 }),
@@ -57,17 +52,17 @@ function formatZodError(error) {
         .join("; ");
 }
 //Register tool call handler with Zod validation
-mcpServer.setRequestHandler(types_1.CallToolRequestSchema, async (request) => {
+mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
     try {
         switch (name) {
             case "getCustomersCount": {
                 //validate args with zod
-                const validatedArgs = tool_schema_1.GetCustomersCountSchema.parse(args);
+                const validatedArgs = GetCustomersCountSchema.parse(args);
                 //call the service
-                const result = await (0, mongodb_service_1.getCustomersCount)(validatedArgs);
+                const result = await getCustomersCount(validatedArgs);
                 //validate the outpu with zod
-                const validatedResult = tool_schema_1.CustomerCountResponseSchema.parse(result);
+                const validatedResult = CustomerCountResponseSchema.parse(result);
                 return {
                     content: [
                         {
@@ -79,11 +74,11 @@ mcpServer.setRequestHandler(types_1.CallToolRequestSchema, async (request) => {
             }
             case "getMonthlyPaymentTotals": {
                 //validate args with zod
-                const validatedArgs = tool_schema_1.GetMonthlyPaymentTotalsSchema.parse(args);
+                const validatedArgs = GetMonthlyPaymentTotalsSchema.parse(args);
                 //call the service
-                const result = await (0, mongodb_service_1.getMonthlyPaymentTotals)(validatedArgs);
+                const result = await getMonthlyPaymentTotals(validatedArgs);
                 //validate the output with zod
-                const validatedResult = tool_schema_1.MonthlyPaymentTotalsResponseSchema.parse(result);
+                const validatedResult = MonthlyPaymentTotalsResponseSchema.parse(result);
                 return {
                     content: [
                         {
@@ -99,7 +94,7 @@ mcpServer.setRequestHandler(types_1.CallToolRequestSchema, async (request) => {
     }
     catch (error) {
         // Handle Zod validation errors
-        if (error instanceof zod_1.ZodError) {
+        if (error instanceof ZodError) {
             const errorMessage = formatZodError(error);
             console.error("Validation error:", errorMessage);
             return {
@@ -136,7 +131,7 @@ mcpServer.setRequestHandler(types_1.CallToolRequestSchema, async (request) => {
 app.post("/mcp", async (req, res) => {
     try {
         //create a new transport for this request (stateless - no session)
-        const transport = new streamableHttp_1.StreamableHTTPServerTransport({
+        const transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: undefined,
         });
         //connect the transport to the MCP server
@@ -167,16 +162,16 @@ app.post("/mcp", async (req, res) => {
 app.get("/health", (_, res) => {
     res.json({
         status: "healthy",
-        database: (0, db_config_1.isDBConnected)() ? "connected" : "disconnected",
+        database: isDBConnected() ? "connected" : "disconnected",
         server: "NRECA Utility MCP",
         version: "1.0.0",
     });
 });
-const PORT = process_1.env.PORT || 8085;
+const PORT = env.PORT || 8085;
 async function startServer() {
     try {
         // Connect to MongoDB on startup
-        await (0, db_config_1.connectToDatabase)();
+        await connectToDatabase();
         app.listen(PORT, () => {
             console.info("\x1b[32m%s\x1b[0m", `✅ Server is running on http://localhost:${PORT}`);
             console.info("\x1b[32m%s\x1b[0m", `✅ MCP endpoint: http://localhost:${PORT}/mcp`);
@@ -189,5 +184,5 @@ async function startServer() {
     }
 }
 startServer();
-exports.default = app;
+export default app;
 //# sourceMappingURL=server.js.map

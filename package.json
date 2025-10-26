@@ -2,11 +2,13 @@
   "name": "nreca-utility-mcp",
   "version": "1.0.0",
   "description": "Model Context Protocol(MCP) server for NRECA Utility Platform",
-  "main": "server.js",
+  "main": "dist/server.js",
+  "type": "module",
   "scripts": {
-    "start": "tsx src/server.ts",
+    "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "vercel-build": "tsc"
   },
   "author": "Aaron Mineen",
   "license": "ISC",

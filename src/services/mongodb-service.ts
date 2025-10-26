@@ -1,12 +1,12 @@
-import CustomerSchema from "../models/CustomerSchema";
+import CustomerSchema from "../models/CustomerSchema.js";
 import {
   CustomerCountResponse,
   GetCustomersCountRequest,
   GetMonthlyPaymentTotalsRequest,
   MonthlyPaymentTotalsResponse,
-} from "../models/tool-schema";
-import { CustomerType, CustomerTypes } from "../models/types";
-import PaymentSchema from "../models/PaymentSchema";
+} from "../models/tool-schema.js";
+import { CustomerType, CustomerTypes } from "../models/types.js";
+import PaymentSchema from "../models/PaymentSchema.js";
 import { Types } from "mongoose";
 
 export const getCustomersCount = async (

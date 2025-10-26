@@ -1,24 +1,27 @@
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import { env } from "process";
-import { Server } from "@modelcontextprotocol/sdk/server/index";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
-} from "@modelcontextprotocol/sdk/types";
-import { connectToDatabase, isDBConnected } from "./configurations/db-config";
+} from "@modelcontextprotocol/sdk/types.js";
+import {
+  connectToDatabase,
+  isDBConnected,
+} from "./configurations/db-config.js";
 import {
   getCustomersCount,
   getMonthlyPaymentTotals,
-} from "./services/mongodb-service";
+} from "./services/mongodb-service.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   CustomerCountResponseSchema,
   GetCustomersCountSchema,
   GetMonthlyPaymentTotalsSchema,
   MonthlyPaymentTotalsResponseSchema,
-} from "./models/tool-schema";
+} from "./models/tool-schema.js";
 import { ZodError } from "zod";
 
 dotenv.config();

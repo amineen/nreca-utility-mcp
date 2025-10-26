@@ -1,21 +1,15 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMonthlyPaymentTotals = exports.getCustomersCount = void 0;
-const CustomerSchema_1 = __importDefault(require("../models/CustomerSchema"));
-const types_1 = require("../models/types");
-const PaymentSchema_1 = __importDefault(require("../models/PaymentSchema"));
-const mongoose_1 = require("mongoose");
-const getCustomersCount = async (request) => {
+import CustomerSchema from "../models/CustomerSchema.js";
+import { CustomerTypes } from "../models/types.js";
+import PaymentSchema from "../models/PaymentSchema.js";
+import { Types } from "mongoose";
+export const getCustomersCount = async (request) => {
     const { utility, allCustomers } = request;
     // Build the match stage
     const matchStage = { service_area_id: utility };
     if (!allCustomers) {
         matchStage.active = true;
     }
-    const aggregationResult = await CustomerSchema_1.default.aggregate([
+    const aggregationResult = await CustomerSchema.aggregate([
         { $match: matchStage },
         {
             $addFields: {
@@ -38,11 +32,11 @@ const getCustomersCount = async (request) => {
     ]);
     // Prepare the totals by customer type
     const customerTypeCounts = {
-        [types_1.CustomerTypes.RESIDENTIAL]: 0,
-        [types_1.CustomerTypes.COMMERCIAL]: 0,
-        [types_1.CustomerTypes.INDUSTRIAL]: 0,
-        [types_1.CustomerTypes.PUBLIC_FACILITY]: 0,
-        [types_1.CustomerTypes.OTHER]: 0,
+        [CustomerTypes.RESIDENTIAL]: 0,
+        [CustomerTypes.COMMERCIAL]: 0,
+        [CustomerTypes.INDUSTRIAL]: 0,
+        [CustomerTypes.PUBLIC_FACILITY]: 0,
+        [CustomerTypes.OTHER]: 0,
     };
     aggregationResult.forEach(({ customer_type, count }) => {
         if (customer_type in customerTypeCounts) {
@@ -55,15 +49,14 @@ const getCustomersCount = async (request) => {
         customerType: customerTypeCounts,
     };
 };
-exports.getCustomersCount = getCustomersCount;
-const getMonthlyPaymentTotals = async (request) => {
+export const getMonthlyPaymentTotals = async (request) => {
     const { utility, month } = request;
     const startOfMonthDate = new Date(month + "-01T00:00:00Z");
     const endOfMonth = new Date(Date.UTC(startOfMonthDate.getUTCFullYear(), startOfMonthDate.getUTCMonth() + 1, 0, 23, 59, 59));
-    const aggregationResult = await PaymentSchema_1.default.aggregate([
+    const aggregationResult = await PaymentSchema.aggregate([
         {
             $match: {
-                service_area_id: new mongoose_1.Types.ObjectId(utility),
+                service_area_id: new Types.ObjectId(utility),
                 timestamp: { $gte: startOfMonthDate, $lt: endOfMonth },
             },
         },
@@ -92,5 +85,4 @@ const getMonthlyPaymentTotals = async (request) => {
     ]);
     return aggregationResult;
 };
-exports.getMonthlyPaymentTotals = getMonthlyPaymentTotals;
 //# sourceMappingURL=mongodb-service.js.map

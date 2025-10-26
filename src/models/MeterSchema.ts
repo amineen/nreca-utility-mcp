@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { MeterDocument } from "./types";
+import { MeterDocument } from "./types.js";
 
 const MeterDoc = new Schema<MeterDocument>(
   {

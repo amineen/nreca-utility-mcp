@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { CustomerDocument, BalanceCredit } from "./types";
+import { CustomerDocument, BalanceCredit } from "./types.js";
 
 const BalanceCreditDoc = new Schema<BalanceCredit>(
   {

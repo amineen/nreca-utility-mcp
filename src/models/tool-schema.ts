@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CustomerTypes, CustomerType } from "./types";
+import { CustomerTypes } from "./types.js";
 
 // Zod Schema for MCP Tools
 export const GetCustomersCountSchema = z

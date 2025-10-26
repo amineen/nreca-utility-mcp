@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CustomerTypes = void 0;
-exports.CustomerTypes = {
+export const CustomerTypes = {
     RESIDENTIAL: "Residential",
     COMMERCIAL: "Commercial",
     INDUSTRIAL: "Industrial",
