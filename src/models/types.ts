@@ -154,3 +154,52 @@ export const CustomerTypes = {
 } as const;
 
 export type CustomerType = (typeof CustomerTypes)[keyof typeof CustomerTypes];
+
+export type DailyEnergySummary = {
+  customerId: Types.ObjectId | string;
+  date: string;
+  totalKWh: number;
+  service_area_id: string | Types.ObjectId;
+  last_heartbeat_end: string;
+  customerType: string | null;
+  readings: HourlyEnergyReading[];
+  meterSerial?: string;
+};
+
+export type DailyEnergySummaryDocument = Document & DailyEnergySummary;
+
+export type HourlyEnergyReading = {
+  cumulative_energy: number;
+  energy_consumption: number;
+  hour: HourType;
+  average_power: number;
+};
+
+export type HourType = (typeof HOURS)[number];
+
+export const HOURS = [
+  "00",
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06",
+  "07",
+  "08",
+  "09",
+  "10",
+  "11",
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+  "17",
+  "18",
+  "19",
+  "20",
+  "21",
+  "22",
+  "23",
+] as const;

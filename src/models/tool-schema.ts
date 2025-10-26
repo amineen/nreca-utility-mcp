@@ -4,7 +4,7 @@ import { CustomerTypes } from "./types.js";
 // Zod Schema for MCP Tools
 export const GetCustomersCountSchema = z
   .object({
-    utility: z
+    utilityId: z
       .string()
       .min(24, "Utility ID must be 24 characters long")
       .max(24, "Utility ID must be 24 characters long")
@@ -21,7 +21,7 @@ export const GetCustomersCountSchema = z
 
 export const GetMonthlyPaymentTotalsSchema = z
   .object({
-    utility: z
+    utilityId: z
       .string()
       .min(24, "Utility ID must be 24 characters long")
       .max(24, "Utility ID must be 24 characters long")

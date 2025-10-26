@@ -32,6 +32,17 @@ const app = express();
 
 app.use(express.json());
 
+//add a root route to provide welcome message and information about the server
+app.get("/", (req: Request, res: Response) => {
+  res.json({
+    message: "Welcome to the NRECA Utility MCP",
+    version: "1.0.0",
+    description: "MCP server for NRECA Utility Platform",
+    developer: "Aaron Mineen",
+    github: "https://github.com/amineen/nreca-utility-mcp",
+  });
+});
+
 const mcpServer = new Server(
   {
     name: "NRECA Utility MCP",

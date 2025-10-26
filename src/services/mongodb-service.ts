@@ -12,10 +12,10 @@ import { Types } from "mongoose";
 export const getCustomersCount = async (
   request: GetCustomersCountRequest
 ): Promise<CustomerCountResponse> => {
-  const { utility, allCustomers } = request;
+  const { utilityId, allCustomers } = request;
 
   // Build the match stage
-  const matchStage: Record<string, any> = { service_area_id: utility };
+  const matchStage: Record<string, any> = { service_area_id: utilityId };
   if (!allCustomers) {
     matchStage.active = true;
   }
@@ -71,7 +71,7 @@ export const getCustomersCount = async (
 export const getMonthlyPaymentTotals = async (
   request: GetMonthlyPaymentTotalsRequest
 ): Promise<MonthlyPaymentTotalsResponse[]> => {
-  const { utility, month } = request;
+  const { utilityId, month } = request;
   const startOfMonthDate = new Date(month + "-01T00:00:00Z");
   const endOfMonth = new Date(
     Date.UTC(
@@ -87,7 +87,7 @@ export const getMonthlyPaymentTotals = async (
   const aggregationResult = await PaymentSchema.aggregate([
     {
       $match: {
-        service_area_id: new Types.ObjectId(utility),
+        service_area_id: new Types.ObjectId(utilityId),
         timestamp: { $gte: startOfMonthDate, $lt: endOfMonth },
       },
     },
