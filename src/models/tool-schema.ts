@@ -4,7 +4,7 @@ import { CustomerTypes } from "./types.js";
 // Zod Schema for MCP Tools
 
 // Reusable utility ID schema
-const UtilityIdSchema = z.object({
+export const GetUtilityInfoRequestSchema = z.object({
   utilityId: z
     .string()
     .min(24, "Utility ID must be 24 characters long")
@@ -12,7 +12,7 @@ const UtilityIdSchema = z.object({
     .describe("The ID of the utility"),
 });
 
-export const GetCustomersCountSchema = UtilityIdSchema.extend({
+export const GetCustomersCountSchema = GetUtilityInfoRequestSchema.extend({
   allCustomers: z
     .boolean()
     .optional()
@@ -22,15 +22,17 @@ export const GetCustomersCountSchema = UtilityIdSchema.extend({
     ),
 }).strict();
 
-export const GetMonthlyPaymentTotalsSchema = UtilityIdSchema.extend({
-  month: z
-    .string()
-    .min(7, "Month must be in the format YYYY-MM")
-    .max(7, "Month must be in the format YYYY-MM")
-    .describe("The month to get the monthly payment totals for"),
-}).strict();
+export const GetMonthlyPaymentTotalsSchema = GetUtilityInfoRequestSchema.extend(
+  {
+    month: z
+      .string()
+      .min(7, "Month must be in the format YYYY-MM")
+      .max(7, "Month must be in the format YYYY-MM")
+      .describe("The month to get the monthly payment totals for"),
+  }
+).strict();
 
-export const GetDailyDataSummarySchema = UtilityIdSchema.extend({
+export const GetDailyDataSummarySchema = GetUtilityInfoRequestSchema.extend({
   date: z
     .string()
     .min(10, "Date must be in the format YYYY-MM-DD")
@@ -43,7 +45,7 @@ export type GetCustomersCountRequest = z.infer<typeof GetCustomersCountSchema>;
 export type GetMonthlyPaymentTotalsRequest = z.infer<
   typeof GetMonthlyPaymentTotalsSchema
 >;
-export type GetUtilityInfoRequest = z.infer<typeof UtilityIdSchema>;
+export type GetUtilityInfoRequest = z.infer<typeof GetUtilityInfoRequestSchema>;
 export type GetDailyDataSummaryRequest = z.infer<
   typeof GetDailyDataSummarySchema
 >;

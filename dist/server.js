@@ -5,9 +5,10 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { ListToolsRequestSchema, CallToolRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { connectToDatabase, isDBConnected, } from "./configurations/db-config.js";
-import { getCustomersCount, getMonthlyPaymentTotals, } from "./services/mongodb-service.js";
+import { getCustomersCount, getMonthlyPaymentTotals, getUtilityInfo, } from "./services/mongodb-service.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { CustomerCountResponseSchema, GetCustomersCountSchema, GetMonthlyPaymentTotalsSchema, MonthlyPaymentTotalsResponseSchema, } from "./models/tool-schema.js";
+import { CustomerCountResponseSchema, GetCustomersCountSchema, GetMonthlyPaymentTotalsSchema, GetUtilityInfoRequestSchema, MonthlyPaymentTotalsResponseSchema, UtilityInfoResponseSchema, } from "./models/tool-schema.js";
+import { MCPToolNames } from "./services/util.js";
 import { ZodError } from "zod";
 dotenv.config();
 connectToDatabase();
@@ -37,18 +38,26 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
         tools: [
             {
-                name: "getCustomersCount",
-                description: "Get the number of customers for a given utility",
-                inputSchema: zodToJsonSchema(GetCustomersCountSchema, {
-                    name: "getCustomersCount",
+                name: MCPToolNames.GET_UTILITY_INFO,
+                description: "Get the information like utility name, acronym, country, system type, system description, and system components about a given utility",
+                inputSchema: zodToJsonSchema(GetUtilityInfoRequestSchema, {
+                    name: MCPToolNames.GET_UTILITY_INFO,
                     $refStrategy: "none",
                 }),
             },
             {
-                name: "getMonthlyPaymentTotals",
+                name: MCPToolNames.GET_CUSTOMERS_COUNT,
+                description: "Get the number of customers for a given utility",
+                inputSchema: zodToJsonSchema(GetCustomersCountSchema, {
+                    name: MCPToolNames.GET_CUSTOMERS_COUNT,
+                    $refStrategy: "none",
+                }),
+            },
+            {
+                name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
                 description: "Get the monthly payment totals for a given utility",
                 inputSchema: zodToJsonSchema(GetMonthlyPaymentTotalsSchema, {
-                    name: "getMonthlyPaymentTotals",
+                    name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
                     $refStrategy: "none",
                 }),
             },
@@ -66,7 +75,7 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
     try {
         switch (name) {
-            case "getCustomersCount": {
+            case MCPToolNames.GET_CUSTOMERS_COUNT: {
                 //validate args with zod
                 const validatedArgs = GetCustomersCountSchema.parse(args);
                 //call the service
@@ -82,7 +91,23 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
                     ],
                 };
             }
-            case "getMonthlyPaymentTotals": {
+            case MCPToolNames.GET_UTILITY_INFO: {
+                //validate args with zod
+                const validatedArgs = GetUtilityInfoRequestSchema.parse(args);
+                //call the service
+                const result = await getUtilityInfo(validatedArgs);
+                //validate the output with zod
+                const validatedResult = UtilityInfoResponseSchema.parse(result);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(validatedResult, null, 2),
+                        },
+                    ],
+                };
+            }
+            case MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS: {
                 //validate args with zod
                 const validatedArgs = GetMonthlyPaymentTotalsSchema.parse(args);
                 //call the service

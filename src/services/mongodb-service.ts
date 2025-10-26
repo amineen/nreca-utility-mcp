@@ -19,6 +19,7 @@ export const getUtilityInfo = async (
   const utilityInfo = await UtilitySchema.findOne(
     { _id: new Types.ObjectId(utilityId) },
     {
+      _id: 0,
       name: 1,
       acronym: 1,
       country: 1,

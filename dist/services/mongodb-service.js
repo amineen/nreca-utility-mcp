@@ -2,6 +2,20 @@ import CustomerSchema from "../models/CustomerSchema.js";
 import { CustomerTypes } from "../models/types.js";
 import PaymentSchema from "../models/PaymentSchema.js";
 import { Types } from "mongoose";
+import UtilitySchema from "../models/UtilitySchema.js";
+export const getUtilityInfo = async (request) => {
+    const { utilityId } = request;
+    const utilityInfo = await UtilitySchema.findOne({ _id: new Types.ObjectId(utilityId) }, {
+        _id: 0,
+        name: 1,
+        acronym: 1,
+        country: 1,
+        systemType: 1,
+        systemDescription: 1,
+        systemComponents: 1,
+    }).lean();
+    return utilityInfo;
+};
 export const getCustomersCount = async (request) => {
     const { utilityId, allCustomers } = request;
     // Build the match stage
@@ -9,7 +23,8 @@ export const getCustomersCount = async (request) => {
     if (!allCustomers) {
         matchStage.active = true;
     }
-    const aggregationResult = await CustomerSchema.aggregate([
+    const utilityInfoPromise = getUtilityInfo({ utilityId });
+    const aggregationResultPromise = CustomerSchema.aggregate([
         { $match: matchStage },
         {
             $addFields: {
@@ -30,6 +45,10 @@ export const getCustomersCount = async (request) => {
             },
         },
     ]);
+    const [utilityInfo, aggregationResult] = await Promise.all([
+        utilityInfoPromise,
+        aggregationResultPromise,
+    ]);
     // Prepare the totals by customer type
     const customerTypeCounts = {
         [CustomerTypes.RESIDENTIAL]: 0,
@@ -45,6 +64,7 @@ export const getCustomersCount = async (request) => {
     });
     const totalCustomers = aggregationResult.reduce((sum, { count }) => sum + count, 0);
     return {
+        utilityInfo: utilityInfo,
         totalCustomers,
         customerType: customerTypeCounts,
     };
