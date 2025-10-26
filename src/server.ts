@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import { env } from "process";
 import { Server } from "@modelcontextprotocol/sdk/server/index";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp";
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
