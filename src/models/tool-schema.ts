@@ -56,16 +56,16 @@ export const CustomerCountResponseSchema = z
   })
   .strict();
 
-export const MonthlyPaymentTotalsResponseSchema = z
-  .object({
-    totalAmount: z.number(),
-    totalKWh: z.number(),
-    customerType: z.enum(
-      Object.values(CustomerTypes) as [CustomerType, ...CustomerType[]]
-    ),
-    currency: z.string(),
-  })
-  .strict();
+export const MonthlyPaymentTotalsResponseSchema = z.array(
+  z
+    .object({
+      totalAmount: z.number(),
+      totalKWh: z.number(),
+      customer_type: z.string(),
+      currency: z.string(),
+    })
+    .strict()
+);
 
 // TypeScript Types Inferred from Response Schemas
 export type CustomerCountResponse = z.infer<typeof CustomerCountResponseSchema>;

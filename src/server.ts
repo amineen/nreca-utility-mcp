@@ -176,6 +176,7 @@ app.post("/mcp", async (req: Request, res: Response) => {
     //clean up the transport when the request closes
     req.on("close", async () => {
       await transport.close();
+      await mcpServer.close();
     });
 
     //Handle the request
@@ -184,8 +185,12 @@ app.post("/mcp", async (req: Request, res: Response) => {
     console.error("Error handling MCP request:", error);
     if (!res.headersSent) {
       res.status(500).json({
-        error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        jsonrpc: "2.0",
+        error: {
+          code: -32603,
+          message: "Internal server error",
+        },
+        id: null,
       });
     }
   }
