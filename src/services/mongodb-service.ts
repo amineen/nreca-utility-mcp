@@ -3,11 +3,33 @@ import {
   CustomerCountResponse,
   GetCustomersCountRequest,
   GetMonthlyPaymentTotalsRequest,
+  GetUtilityInfoRequest,
   MonthlyPaymentTotalsResponse,
+  UtilityInfoResponse,
 } from "../models/tool-schema.js";
 import { CustomerType, CustomerTypes } from "../models/types.js";
 import PaymentSchema from "../models/PaymentSchema.js";
 import { Types } from "mongoose";
+import UtilitySchema from "../models/UtilitySchema.js";
+
+export const getUtilityInfo = async (
+  request: GetUtilityInfoRequest
+): Promise<UtilityInfoResponse> => {
+  const { utilityId } = request;
+  const utilityInfo = await UtilitySchema.findOne(
+    { _id: new Types.ObjectId(utilityId) },
+    {
+      name: 1,
+      acronym: 1,
+      country: 1,
+      systemType: 1,
+      systemDescription: 1,
+      systemComponents: 1,
+    }
+  ).lean();
+
+  return utilityInfo as unknown as UtilityInfoResponse;
+};
 
 export const getCustomersCount = async (
   request: GetCustomersCountRequest
@@ -20,7 +42,9 @@ export const getCustomersCount = async (
     matchStage.active = true;
   }
 
-  const aggregationResult = await CustomerSchema.aggregate([
+  const utilityInfoPromise = getUtilityInfo({ utilityId });
+
+  const aggregationResultPromise = CustomerSchema.aggregate([
     { $match: matchStage },
     {
       $addFields: {
@@ -42,6 +66,11 @@ export const getCustomersCount = async (
     },
   ]);
 
+  const [utilityInfo, aggregationResult] = await Promise.all([
+    utilityInfoPromise,
+    aggregationResultPromise,
+  ]);
+
   // Prepare the totals by customer type
   const customerTypeCounts: Record<CustomerType, number> = {
     [CustomerTypes.RESIDENTIAL]: 0,
@@ -58,11 +87,12 @@ export const getCustomersCount = async (
   });
 
   const totalCustomers = aggregationResult.reduce(
-    (sum, { count }) => sum + count,
+    (sum: number, { count }: { count: number }) => sum + count,
     0
   );
 
   return {
+    utilityInfo: utilityInfo as unknown as UtilityInfoResponse,
     totalCustomers,
     customerType: customerTypeCounts,
   };

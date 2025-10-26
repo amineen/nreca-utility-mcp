@@ -30,15 +30,53 @@ export const GetMonthlyPaymentTotalsSchema = UtilityIdSchema.extend({
     .describe("The month to get the monthly payment totals for"),
 }).strict();
 
+export const GetDailyDataSummarySchema = UtilityIdSchema.extend({
+  date: z
+    .string()
+    .min(10, "Date must be in the format YYYY-MM-DD")
+    .max(10, "Date must be in the format YYYY-MM-DD")
+    .describe("The date to get the daily data summary for"),
+}).strict();
+
 // TypeScript Types Inferred from Zod Schemas
 export type GetCustomersCountRequest = z.infer<typeof GetCustomersCountSchema>;
 export type GetMonthlyPaymentTotalsRequest = z.infer<
   typeof GetMonthlyPaymentTotalsSchema
 >;
+export type GetUtilityInfoRequest = z.infer<typeof UtilityIdSchema>;
+export type GetDailyDataSummaryRequest = z.infer<
+  typeof GetDailyDataSummarySchema
+>;
 
 //Response Schemas for the MCP Tools
+export const UtilityInfoResponseSchema = z
+  .object({
+    name: z.string().describe("The name of the utility"),
+    acronym: z.string().describe("The acronym of the utility"),
+    country: z.string().describe("The country where the utility is located"),
+    systemType: z
+      .string()
+      .describe("The generation technology used by the utility"),
+    systemDescription: z
+      .string()
+      .describe(
+        "The description of the generation technology used by the utility"
+      ),
+    systemComponents: z.array(
+      z.object({
+        component: z.string().describe("The component of the system"),
+        capacity: z.number().describe("The capacity of the system component"),
+        unit: z.string().describe("The unit of the component's capacity"),
+      })
+    ),
+  })
+  .strict();
+
+export type UtilityInfoResponse = z.infer<typeof UtilityInfoResponseSchema>;
+
 export const CustomerCountResponseSchema = z
   .object({
+    utilityInfo: UtilityInfoResponseSchema,
     totalCustomers: z.number(),
     customerType: z
       .object({
@@ -59,6 +97,23 @@ export const MonthlyPaymentTotalsResponseSchema = z.array(
       totalKWh: z.number(),
       customer_type: z.string(),
       currency: z.string(),
+    })
+    .strict()
+);
+
+export const DailyPaymentTotalsResponseSchema = z.array(
+  z
+    .object({
+      date: z.string().describe("The date of the daily payment totals"),
+      totalAmount: z
+        .number()
+        .describe("The total amount of the daily payment totals"),
+      totalKWh: z
+        .number()
+        .describe("The total kWh of the daily payment totals"),
+      customer_type: z
+        .string()
+        .describe("The customer type of the daily payment totals"),
     })
     .strict()
 );

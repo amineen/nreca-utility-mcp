@@ -203,3 +203,61 @@ export const HOURS = [
   "22",
   "23",
 ] as const;
+
+export type SystemType = "off-grid" | "grid-connected";
+
+export type ComponentType =
+  | "solar pv"
+  | "wind"
+  | "hydro"
+  | "generator"
+  | "biomass"
+  | "geothermal"
+  | "battery storage system"
+  | "inverter"
+  | "transformer"
+  | "other";
+
+export type UnitType =
+  | "kW"
+  | "kWh"
+  | "MW"
+  | "MWh"
+  | "GW"
+  | "GWh"
+  | "MW"
+  | "MWh";
+
+export type TechnologyComponentType = {
+  capacity: number;
+  component: ComponentType;
+  unit: UnitType;
+};
+
+export type UtilityType = {
+  name: string;
+  acronym: string;
+  country: string;
+  logoUrl?: string;
+  address: string;
+  contactEmail: string;
+  contactPhone: string;
+  totalInstalledCapacitykW?: number;
+  systemComponents?: TechnologyComponentType[];
+  systemType: SystemType;
+  systemDescription: string;
+  numberOfCustomers: number;
+  location?: {
+    type: string;
+    coordinates: number[];
+  };
+  populationServed?: PopulationServedType;
+  isActive: boolean;
+};
+
+export type PopulationServedType = {
+  males: number;
+  females: number;
+};
+
+export type UtilityDocument = UtilityType & Document;
