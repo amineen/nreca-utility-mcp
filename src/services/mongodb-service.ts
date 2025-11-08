@@ -6,11 +6,16 @@ import {
   GetUtilityInfoRequest,
   MonthlyPaymentTotalsResponse,
   UtilityInfoResponse,
+  MonthlyEnergySummaryResponse,
+  GetMonthlyEnergySummaryRequest,
+  DailyEnergySummaryResponse,
+  GetDailyEnergySummaryRequest,
 } from "../models/tool-schema.js";
 import { CustomerType, CustomerTypes } from "../models/types.js";
 import PaymentSchema from "../models/PaymentSchema.js";
 import { Types } from "mongoose";
 import UtilitySchema from "../models/UtilitySchema.js";
+import DailyEnergySummarySchema from "../models/DailyEnergySummarySchema.js";
 
 export const getUtilityInfo = async (
   request: GetUtilityInfoRequest
@@ -147,4 +152,215 @@ export const getMonthlyPaymentTotals = async (
   ]);
 
   return aggregationResult;
+};
+
+export const getMonthlyEnergySummary = async (
+  request: GetMonthlyEnergySummaryRequest
+): Promise<MonthlyEnergySummaryResponse> => {
+  const { utilityId, month } = request;
+
+  const aggregationResult = await DailyEnergySummarySchema.aggregate([
+    {
+      $match: {
+        service_area_id: utilityId,
+        date: {
+          $regex: new RegExp(`^${month}-\\d{2}$`),
+        },
+      },
+    },
+    {
+      $group: {
+        _id: "$customerType",
+        totalKWh: { $sum: "$totalKWh" },
+        customers: {
+          $push: {
+            customerId: "$customerId",
+            totalKWh: "$totalKWh",
+          },
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalKWh: { $sum: "$totalKWh" },
+        consumptionByType: {
+          $push: {
+            customerType: "$_id",
+            totalKWh: "$totalKWh",
+          },
+        },
+        allCustomers: { $push: "$customers" },
+      },
+    },
+    {
+      $unwind: "$allCustomers",
+    },
+    {
+      $unwind: "$allCustomers",
+    },
+    {
+      $group: {
+        _id: {
+          customerId: "$allCustomers.customerId",
+          totalKWh: "$totalKWh",
+          consumptionByType: "$consumptionByType",
+        },
+        customerTotalKWh: { $sum: "$allCustomers.totalKWh" },
+      },
+    },
+    {
+      $sort: { customerTotalKWh: -1 },
+    },
+    {
+      $limit: 10,
+    },
+    {
+      $lookup: {
+        from: "customers",
+        localField: "_id.customerId",
+        foreignField: "_id",
+        as: "customerInfo",
+      },
+    },
+    {
+      $unwind: "$customerInfo",
+    },
+    {
+      $group: {
+        _id: null,
+        totalKWh: { $first: "$_id.totalKWh" },
+        consumptionByType: { $first: "$_id.consumptionByType" },
+        topConsumers: {
+          $push: {
+            customerName: "$customerInfo.name",
+            totalKWh: "$customerTotalKWh",
+          },
+        },
+      },
+    },
+  ]);
+
+  if (aggregationResult.length === 0) {
+    return {
+      month,
+      totalKWh: 0,
+      consumptionByCustomerType: {
+        [CustomerTypes.RESIDENTIAL]: 0,
+        [CustomerTypes.COMMERCIAL]: 0,
+        [CustomerTypes.INDUSTRIAL]: 0,
+        [CustomerTypes.PUBLIC_FACILITY]: 0,
+        [CustomerTypes.OTHER]: 0,
+      },
+      topConsumers: [],
+    } as MonthlyEnergySummaryResponse;
+  }
+
+  const result = aggregationResult[0];
+
+  const consumptionByCustomerType: Record<CustomerType, number> = {
+    [CustomerTypes.RESIDENTIAL]: 0,
+    [CustomerTypes.COMMERCIAL]: 0,
+    [CustomerTypes.INDUSTRIAL]: 0,
+    [CustomerTypes.PUBLIC_FACILITY]: 0,
+    [CustomerTypes.OTHER]: 0,
+  };
+
+  result.consumptionByType.forEach(
+    ({
+      customerType,
+      totalKWh,
+    }: {
+      customerType: string;
+      totalKWh: number;
+    }) => {
+      if (customerType in consumptionByCustomerType) {
+        consumptionByCustomerType[customerType as CustomerType] = totalKWh;
+      }
+    }
+  );
+
+  return {
+    month,
+    totalKWh: result.totalKWh,
+    consumptionByCustomerType,
+    topConsumers: result.topConsumers,
+  };
+};
+
+export const getDailyEnergySummary = async (
+  request: GetDailyEnergySummaryRequest
+): Promise<DailyEnergySummaryResponse> => {
+  const { utilityId, date } = request;
+
+  const aggregationResult = await DailyEnergySummarySchema.aggregate([
+    {
+      $match: {
+        service_area_id: utilityId,
+        date,
+      },
+    },
+    {
+      $group: {
+        _id: "$customerType",
+        totalKWh: { $sum: "$totalKWh" },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalKWh: { $sum: "$totalKWh" },
+        consumptionByType: {
+          $push: {
+            customerType: "$_id",
+            totalKWh: "$totalKWh",
+          },
+        },
+      },
+    },
+  ]);
+
+  if (aggregationResult.length === 0) {
+    return {
+      date,
+      totalKWh: 0,
+      consumptionByCustomerType: {
+        [CustomerTypes.RESIDENTIAL]: 0,
+        [CustomerTypes.COMMERCIAL]: 0,
+        [CustomerTypes.INDUSTRIAL]: 0,
+        [CustomerTypes.PUBLIC_FACILITY]: 0,
+        [CustomerTypes.OTHER]: 0,
+      },
+    } as DailyEnergySummaryResponse;
+  }
+
+  const result = aggregationResult[0];
+
+  const consumptionByCustomerType: Record<CustomerType, number> = {
+    [CustomerTypes.RESIDENTIAL]: 0,
+    [CustomerTypes.COMMERCIAL]: 0,
+    [CustomerTypes.INDUSTRIAL]: 0,
+    [CustomerTypes.PUBLIC_FACILITY]: 0,
+    [CustomerTypes.OTHER]: 0,
+  };
+
+  result.consumptionByType.forEach(
+    ({
+      customerType,
+      totalKWh,
+    }: {
+      customerType: string;
+      totalKWh: number;
+    }) => {
+      if (customerType in consumptionByCustomerType) {
+        consumptionByCustomerType[customerType as CustomerType] = totalKWh;
+      }
+    }
+  );
+
+  return {
+    date,
+    totalKWh: result.totalKWh,
+    consumptionByCustomerType,
+  };
 };

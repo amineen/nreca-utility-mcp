@@ -3,6 +3,8 @@ export const MCPToolNames = {
   GET_MONTHLY_PAYMENT_TOTALS: "getMonthlyPaymentTotals",
   GET_UTILITY_INFO: "getUtilityInfo",
   GET_DAILY_DATA_SUMMARY: "getDailyDataSummary",
+  GET_MONTHLY_ENERGY_SUMMARY: "getMonthlyEnergySummary",
+  GET_DAILY_ENERGY_SUMMARY: "getDailyEnergySummary",
 };
 
 export type MCPToolName = (typeof MCPToolNames)[keyof typeof MCPToolNames];

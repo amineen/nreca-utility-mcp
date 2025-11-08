@@ -14,6 +14,13 @@ dotenv.config();
 connectToDatabase();
 const app = express();
 app.use(express.json());
+// import { getMonthlyEnergySummary } from "./services/mongodb-service.js";
+// getMonthlyEnergySummary({
+//   utilityId: "679dc04aac3872bc0b6fff25",
+//   month: "2025-03",
+// }).then((result) => {
+//   console.log(result);
+// });
 //add a root route to provide welcome message and information about the server
 app.get("/", (req, res) => {
     res.json({

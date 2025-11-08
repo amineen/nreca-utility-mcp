@@ -13,15 +13,21 @@ import {
 } from "./configurations/db-config.js";
 import {
   getCustomersCount,
+  getDailyEnergySummary,
+  getMonthlyEnergySummary,
   getMonthlyPaymentTotals,
   getUtilityInfo,
 } from "./services/mongodb-service.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   CustomerCountResponseSchema,
+  DailyEnergySummaryResponseSchema,
   GetCustomersCountSchema,
+  GetDailyEnergySummarySchema,
+  GetMonthlyEnergySummarySchema,
   GetMonthlyPaymentTotalsSchema,
   GetUtilityInfoRequestSchema,
+  MonthlyEnergySummaryResponseSchema,
   MonthlyPaymentTotalsResponseSchema,
   UtilityInfoResponseSchema,
 } from "./models/tool-schema.js";
@@ -35,6 +41,16 @@ connectToDatabase();
 const app = express();
 
 app.use(express.json());
+
+//TODO: Testing MongoDB Services
+// import { getMonthlyEnergySummary } from "./services/mongodb-service.js";
+// import { getDailyEnergySummary } from "./services/mongodb-service.js";
+// getDailyEnergySummary({
+//   utilityId: "679dc04aac3872bc0b6fff25",
+//   date: "2025-03-01",
+// }).then((result) => {
+//   console.log(result);
+// });
 
 //add a root route to provide welcome message and information about the server
 app.get("/", (req: Request, res: Response) => {
@@ -78,6 +94,22 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
         description: "Get the number of customers for a given utility",
         inputSchema: zodToJsonSchema(GetCustomersCountSchema, {
           name: MCPToolNames.GET_CUSTOMERS_COUNT,
+          $refStrategy: "none",
+        }),
+      },
+      {
+        name: MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY,
+        description: "Get the monthly energy summary for a given utility.",
+        inputSchema: zodToJsonSchema(GetMonthlyEnergySummarySchema, {
+          name: MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY,
+          $refStrategy: "none",
+        }),
+      },
+      {
+        name: MCPToolNames.GET_DAILY_ENERGY_SUMMARY,
+        description: "Get the daily energy summary for a given utility.",
+        inputSchema: zodToJsonSchema(GetDailyEnergySummarySchema, {
+          name: MCPToolNames.GET_DAILY_ENERGY_SUMMARY,
           $refStrategy: "none",
         }),
       },
@@ -148,6 +180,41 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
         //validate the output with zod
         const validatedResult =
           MonthlyPaymentTotalsResponseSchema.parse(result);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(validatedResult, null, 2),
+            },
+          ],
+        };
+      }
+
+      case MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY: {
+        //validate args with zod
+        const validatedArgs = GetMonthlyEnergySummarySchema.parse(args);
+        //call the service
+        const result = await getMonthlyEnergySummary(validatedArgs);
+        //validate the output with zod
+        const validatedResult =
+          MonthlyEnergySummaryResponseSchema.parse(result);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(validatedResult, null, 2),
+            },
+          ],
+        };
+      }
+
+      case MCPToolNames.GET_DAILY_ENERGY_SUMMARY: {
+        //validate args with zod
+        const validatedArgs = GetDailyEnergySummarySchema.parse(args);
+        //call the service
+        const result = await getDailyEnergySummary(validatedArgs);
+        //validate the output with zod
+        const validatedResult = DailyEnergySummaryResponseSchema.parse(result);
         return {
           content: [
             {

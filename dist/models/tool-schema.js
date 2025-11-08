@@ -30,6 +30,20 @@ export const GetDailyDataSummarySchema = GetUtilityInfoRequestSchema.extend({
         .max(10, "Date must be in the format YYYY-MM-DD")
         .describe("The date to get the daily data summary for"),
 }).strict();
+export const GetMonthlyEnergySummarySchema = GetUtilityInfoRequestSchema.extend({
+    month: z
+        .string()
+        .min(7, "Month must be in the format YYYY-MM")
+        .max(7, "Month must be in the format YYYY-MM")
+        .describe("The month to get the monthly energy summary for"),
+}).strict();
+export const GetDailyEnergySummarySchema = GetUtilityInfoRequestSchema.extend({
+    date: z
+        .string()
+        .min(10, "Date must be in the format YYYY-MM-DD")
+        .max(10, "Date must be in the format YYYY-MM-DD")
+        .describe("The date to get the daily energy summary for"),
+}).strict();
 //Response Schemas for the MCP Tools
 export const UtilityInfoResponseSchema = z
     .object({
@@ -86,4 +100,44 @@ export const DailyPaymentTotalsResponseSchema = z.array(z
         .describe("The customer type of the daily payment totals"),
 })
     .strict());
+export const MonthlyEnergySummaryResponseSchema = z
+    .object({
+    month: z.string().describe("The month of the monthly energy summary"),
+    totalKWh: z
+        .number()
+        .describe("The total kWh consumed by all customers in the month"),
+    consumptionByCustomerType: z
+        .object({
+        [CustomerTypes.RESIDENTIAL]: z.number(),
+        [CustomerTypes.COMMERCIAL]: z.number(),
+        [CustomerTypes.INDUSTRIAL]: z.number(),
+        [CustomerTypes.PUBLIC_FACILITY]: z.number(),
+        [CustomerTypes.OTHER]: z.number(),
+    })
+        .describe("The consumption by customer type in the month"),
+    topConsumers: z.array(z.object({
+        customerName: z.string().describe("The name of the customer"),
+        totalKWh: z
+            .number()
+            .describe("The total kWh consumed by the customer in the month"),
+    })),
+})
+    .strict();
+export const DailyEnergySummaryResponseSchema = z
+    .object({
+    date: z.string().describe("The date of the daily energy summary"),
+    totalKWh: z
+        .number()
+        .describe("The total kWh consumed by all customers in the day"),
+    consumptionByCustomerType: z
+        .object({
+        [CustomerTypes.RESIDENTIAL]: z.number(),
+        [CustomerTypes.COMMERCIAL]: z.number(),
+        [CustomerTypes.INDUSTRIAL]: z.number(),
+        [CustomerTypes.PUBLIC_FACILITY]: z.number(),
+        [CustomerTypes.OTHER]: z.number(),
+    })
+        .describe("The consumption by customer type in the day"),
+})
+    .strict();
 //# sourceMappingURL=tool-schema.js.map
