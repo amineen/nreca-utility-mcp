@@ -10,6 +10,8 @@ import {
   GetMonthlyEnergySummaryRequest,
   DailyEnergySummaryResponse,
   GetDailyEnergySummaryRequest,
+  YearlyEnergySummaryResponse,
+  GetYearlyEnergySummaryRequest,
 } from "../models/tool-schema.js";
 import { CustomerType, CustomerTypes } from "../models/types.js";
 import PaymentSchema from "../models/PaymentSchema.js";
@@ -362,5 +364,155 @@ export const getDailyEnergySummary = async (
     date,
     totalKWh: result.totalKWh,
     consumptionByCustomerType,
+  };
+};
+
+export const getYearlyEnergySummary = async (
+  request: GetYearlyEnergySummaryRequest
+): Promise<YearlyEnergySummaryResponse> => {
+  const { utilityId, year } = request;
+
+  // Generate all months for the given year
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const month = (i + 1).toString().padStart(2, "0");
+    return `${year}-${month}`;
+  });
+
+  // Create a shared match condition for both queries
+  const yearMatchCondition = {
+    service_area_id: utilityId,
+    date: {
+      $regex: new RegExp(`^${year}-\\d{2}-\\d{2}$`),
+    },
+  };
+
+  // Run both aggregations in parallel using Promise.all
+  const [aggregationResult, topConsumersResult] = await Promise.all([
+    // Aggregate monthly data for the entire year
+    DailyEnergySummarySchema.aggregate([
+      {
+        $match: yearMatchCondition,
+      },
+      {
+        $project: {
+          month: { $substr: ["$date", 0, 7] }, // Extract YYYY-MM from date
+          customerType: 1,
+          totalKWh: 1,
+        },
+      },
+      {
+        $group: {
+          _id: {
+            month: "$month",
+            customerType: "$customerType",
+          },
+          totalKWh: { $sum: "$totalKWh" },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.month",
+          totalKWh: { $sum: "$totalKWh" },
+          consumptionByType: {
+            $push: {
+              customerType: "$_id.customerType",
+              totalKWh: "$totalKWh",
+            },
+          },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]),
+
+    // Get top consumers for the entire year
+    DailyEnergySummarySchema.aggregate([
+      {
+        $match: yearMatchCondition,
+      },
+      {
+        $group: {
+          _id: "$customerId",
+          totalKWh: { $sum: "$totalKWh" },
+        },
+      },
+      {
+        $sort: { totalKWh: -1 },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "customerInfo",
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $unwind: "$customerInfo",
+      },
+      {
+        $project: {
+          _id: 0,
+          customerName: "$customerInfo.name",
+          totalKWh: 1,
+        },
+      },
+    ]),
+  ]);
+
+  // Build monthly consumption array with all 12 months
+  // Convert array to Map for O(1) lookup instead of O(n) find
+  const monthDataMap = new Map(
+    aggregationResult.map((item) => [item._id, item])
+  );
+
+  const monthlyConsumption = months.map((month) => {
+    const monthData = monthDataMap.get(month);
+
+    const consumptionByCustomerType: Record<CustomerType, number> = {
+      [CustomerTypes.RESIDENTIAL]: 0,
+      [CustomerTypes.COMMERCIAL]: 0,
+      [CustomerTypes.INDUSTRIAL]: 0,
+      [CustomerTypes.PUBLIC_FACILITY]: 0,
+      [CustomerTypes.OTHER]: 0,
+    };
+
+    if (monthData) {
+      monthData.consumptionByType.forEach(
+        ({
+          customerType,
+          totalKWh,
+        }: {
+          customerType: string;
+          totalKWh: number;
+        }) => {
+          if (customerType in consumptionByCustomerType) {
+            consumptionByCustomerType[customerType as CustomerType] = totalKWh;
+          }
+        }
+      );
+    }
+
+    return {
+      month,
+      totalKWh: monthData?.totalKWh || 0,
+      consumptionByCustomerType,
+    };
+  });
+
+  return {
+    monthlyConsumption,
+    topConsumers: topConsumersResult,
   };
 };

@@ -5,19 +5,27 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { ListToolsRequestSchema, CallToolRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { connectToDatabase, isDBConnected, } from "./configurations/db-config.js";
-import { getCustomersCount, getMonthlyPaymentTotals, getUtilityInfo, } from "./services/mongodb-service.js";
+import { getCustomersCount, getDailyEnergySummary, getMonthlyEnergySummary, getMonthlyPaymentTotals, getUtilityInfo, getYearlyEnergySummary, } from "./services/mongodb-service.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { CustomerCountResponseSchema, GetCustomersCountSchema, GetMonthlyPaymentTotalsSchema, GetUtilityInfoRequestSchema, MonthlyPaymentTotalsResponseSchema, UtilityInfoResponseSchema, } from "./models/tool-schema.js";
+import { CustomerCountResponseSchema, DailyEnergySummaryResponseSchema, GetCustomersCountSchema, GetDailyEnergySummarySchema, GetMonthlyEnergySummarySchema, GetMonthlyPaymentTotalsSchema, GetUtilityInfoRequestSchema, GetYearlyEnergySummarySchema, MonthlyEnergySummaryResponseSchema, MonthlyPaymentTotalsResponseSchema, UtilityInfoResponseSchema, YearlyEnergySummaryResponseSchema, } from "./models/tool-schema.js";
 import { MCPToolNames } from "./services/util.js";
 import { ZodError } from "zod";
 dotenv.config();
 connectToDatabase();
 const app = express();
 app.use(express.json());
-// import { getMonthlyEnergySummary } from "./services/mongodb-service.js";
-// getMonthlyEnergySummary({
+//TODO: Testing MongoDB Services
+console.time("getYearlyEnergySummary");
+getYearlyEnergySummary({
+    utilityId: "679dc04aac3872bc0b6fff25",
+    year: "2025",
+}).then((result) => {
+    console.log(result);
+    console.timeEnd("getYearlyEnergySummary");
+});
+// getDailyEnergySummary({
 //   utilityId: "679dc04aac3872bc0b6fff25",
-//   month: "2025-03",
+//   date: "2025-03-01",
 // }).then((result) => {
 //   console.log(result);
 // });
@@ -61,10 +69,34 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
                 }),
             },
             {
+                name: MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY,
+                description: "Get the monthly energy summary for a given utility.",
+                inputSchema: zodToJsonSchema(GetMonthlyEnergySummarySchema, {
+                    name: MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY,
+                    $refStrategy: "none",
+                }),
+            },
+            {
+                name: MCPToolNames.GET_DAILY_ENERGY_SUMMARY,
+                description: "Get the daily energy summary for a given utility.",
+                inputSchema: zodToJsonSchema(GetDailyEnergySummarySchema, {
+                    name: MCPToolNames.GET_DAILY_ENERGY_SUMMARY,
+                    $refStrategy: "none",
+                }),
+            },
+            {
                 name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
                 description: "Get the monthly payment totals for a given utility",
                 inputSchema: zodToJsonSchema(GetMonthlyPaymentTotalsSchema, {
                     name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
+                    $refStrategy: "none",
+                }),
+            },
+            {
+                name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
+                description: "Get the yearly energy summary for a given utility. Returns monthly consumption data for all 12 months and top consumers for the year.",
+                inputSchema: zodToJsonSchema(GetYearlyEnergySummarySchema, {
+                    name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
                     $refStrategy: "none",
                 }),
             },
@@ -121,6 +153,54 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const result = await getMonthlyPaymentTotals(validatedArgs);
                 //validate the output with zod
                 const validatedResult = MonthlyPaymentTotalsResponseSchema.parse(result);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(validatedResult, null, 2),
+                        },
+                    ],
+                };
+            }
+            case MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY: {
+                //validate args with zod
+                const validatedArgs = GetMonthlyEnergySummarySchema.parse(args);
+                //call the service
+                const result = await getMonthlyEnergySummary(validatedArgs);
+                //validate the output with zod
+                const validatedResult = MonthlyEnergySummaryResponseSchema.parse(result);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(validatedResult, null, 2),
+                        },
+                    ],
+                };
+            }
+            case MCPToolNames.GET_DAILY_ENERGY_SUMMARY: {
+                //validate args with zod
+                const validatedArgs = GetDailyEnergySummarySchema.parse(args);
+                //call the service
+                const result = await getDailyEnergySummary(validatedArgs);
+                //validate the output with zod
+                const validatedResult = DailyEnergySummaryResponseSchema.parse(result);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(validatedResult, null, 2),
+                        },
+                    ],
+                };
+            }
+            case MCPToolNames.GET_YEARLY_ENERGY_SUMMARY: {
+                //validate args with zod
+                const validatedArgs = GetYearlyEnergySummarySchema.parse(args);
+                //call the service
+                const result = await getYearlyEnergySummary(validatedArgs);
+                //validate the output with zod
+                const validatedResult = YearlyEnergySummaryResponseSchema.parse(result);
                 return {
                     content: [
                         {

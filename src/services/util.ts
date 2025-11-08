@@ -5,6 +5,7 @@ export const MCPToolNames = {
   GET_DAILY_DATA_SUMMARY: "getDailyDataSummary",
   GET_MONTHLY_ENERGY_SUMMARY: "getMonthlyEnergySummary",
   GET_DAILY_ENERGY_SUMMARY: "getDailyEnergySummary",
+  GET_YEARLY_ENERGY_SUMMARY: "getYearlyEnergySummary",
 };
 
 export type MCPToolName = (typeof MCPToolNames)[keyof typeof MCPToolNames];

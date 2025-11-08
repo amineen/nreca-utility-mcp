@@ -17,6 +17,7 @@ import {
   getMonthlyEnergySummary,
   getMonthlyPaymentTotals,
   getUtilityInfo,
+  getYearlyEnergySummary,
 } from "./services/mongodb-service.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
@@ -27,9 +28,11 @@ import {
   GetMonthlyEnergySummarySchema,
   GetMonthlyPaymentTotalsSchema,
   GetUtilityInfoRequestSchema,
+  GetYearlyEnergySummarySchema,
   MonthlyEnergySummaryResponseSchema,
   MonthlyPaymentTotalsResponseSchema,
   UtilityInfoResponseSchema,
+  YearlyEnergySummaryResponseSchema,
 } from "./models/tool-schema.js";
 import { MCPToolName, MCPToolNames } from "./services/util.js";
 import { ZodError } from "zod";
@@ -43,8 +46,7 @@ const app = express();
 app.use(express.json());
 
 //TODO: Testing MongoDB Services
-// import { getMonthlyEnergySummary } from "./services/mongodb-service.js";
-// import { getDailyEnergySummary } from "./services/mongodb-service.js";
+
 // getDailyEnergySummary({
 //   utilityId: "679dc04aac3872bc0b6fff25",
 //   date: "2025-03-01",
@@ -118,6 +120,15 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
         description: "Get the monthly payment totals for a given utility",
         inputSchema: zodToJsonSchema(GetMonthlyPaymentTotalsSchema, {
           name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
+          $refStrategy: "none",
+        }),
+      },
+      {
+        name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
+        description:
+          "Get the yearly energy summary for a given utility. Returns monthly consumption data for all 12 months and top consumers for the year.",
+        inputSchema: zodToJsonSchema(GetYearlyEnergySummarySchema, {
+          name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
           $refStrategy: "none",
         }),
       },
@@ -215,6 +226,23 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await getDailyEnergySummary(validatedArgs);
         //validate the output with zod
         const validatedResult = DailyEnergySummaryResponseSchema.parse(result);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(validatedResult, null, 2),
+            },
+          ],
+        };
+      }
+
+      case MCPToolNames.GET_YEARLY_ENERGY_SUMMARY: {
+        //validate args with zod
+        const validatedArgs = GetYearlyEnergySummarySchema.parse(args);
+        //call the service
+        const result = await getYearlyEnergySummary(validatedArgs);
+        //validate the output with zod
+        const validatedResult = YearlyEnergySummaryResponseSchema.parse(result);
         return {
           content: [
             {

@@ -44,6 +44,13 @@ export const GetDailyEnergySummarySchema = GetUtilityInfoRequestSchema.extend({
         .max(10, "Date must be in the format YYYY-MM-DD")
         .describe("The date to get the daily energy summary for"),
 }).strict();
+export const GetYearlyEnergySummarySchema = GetUtilityInfoRequestSchema.extend({
+    year: z
+        .string()
+        .min(4, "Year must be in the format YYYY")
+        .max(4, "Year must be in the format YYYY")
+        .describe("The year to get the yearly energy summary for"),
+}).strict();
 //Response Schemas for the MCP Tools
 export const UtilityInfoResponseSchema = z
     .object({
@@ -138,6 +145,39 @@ export const DailyEnergySummaryResponseSchema = z
         [CustomerTypes.OTHER]: z.number(),
     })
         .describe("The consumption by customer type in the day"),
+})
+    .strict();
+export const YearlyEnergySummaryResponseSchema = z
+    .object({
+    monthlyConsumption: z
+        .array(z
+        .object({
+        month: z
+            .string()
+            .describe("The month of the yearly energy summary"),
+        totalKWh: z
+            .number()
+            .describe("The total kWh consumed by all customers in the month"),
+        consumptionByCustomerType: z
+            .object({
+            [CustomerTypes.RESIDENTIAL]: z.number(),
+            [CustomerTypes.COMMERCIAL]: z.number(),
+            [CustomerTypes.INDUSTRIAL]: z.number(),
+            [CustomerTypes.PUBLIC_FACILITY]: z.number(),
+            [CustomerTypes.OTHER]: z.number(),
+        })
+            .describe("The consumption by customer type in the month"),
+    })
+        .strict())
+        .describe("The monthly consumption for a given year"),
+    topConsumers: z
+        .array(z.object({
+        customerName: z.string().describe("The name of the customer"),
+        totalKWh: z
+            .number()
+            .describe("The total kWh consumed by the customer in the month"),
+    }))
+        .describe("The top consumers for a given year"),
 })
     .strict();
 //# sourceMappingURL=tool-schema.js.map

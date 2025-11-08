@@ -58,6 +58,14 @@ export const GetDailyEnergySummarySchema = GetUtilityInfoRequestSchema.extend({
     .describe("The date to get the daily energy summary for"),
 }).strict();
 
+export const GetYearlyEnergySummarySchema = GetUtilityInfoRequestSchema.extend({
+  year: z
+    .string()
+    .min(4, "Year must be in the format YYYY")
+    .max(4, "Year must be in the format YYYY")
+    .describe("The year to get the yearly energy summary for"),
+}).strict();
+
 // TypeScript Types Inferred from Zod Schemas
 export type GetCustomersCountRequest = z.infer<typeof GetCustomersCountSchema>;
 export type GetMonthlyPaymentTotalsRequest = z.infer<
@@ -72,6 +80,9 @@ export type GetMonthlyEnergySummaryRequest = z.infer<
 >;
 export type GetDailyEnergySummaryRequest = z.infer<
   typeof GetDailyEnergySummarySchema
+>;
+export type GetYearlyEnergySummaryRequest = z.infer<
+  typeof GetYearlyEnergySummarySchema
 >;
 
 //Response Schemas for the MCP Tools
@@ -188,6 +199,44 @@ export const DailyEnergySummaryResponseSchema = z
   })
   .strict();
 
+export const YearlyEnergySummaryResponseSchema = z
+  .object({
+    monthlyConsumption: z
+      .array(
+        z
+          .object({
+            month: z
+              .string()
+              .describe("The month of the yearly energy summary"),
+            totalKWh: z
+              .number()
+              .describe("The total kWh consumed by all customers in the month"),
+            consumptionByCustomerType: z
+              .object({
+                [CustomerTypes.RESIDENTIAL]: z.number(),
+                [CustomerTypes.COMMERCIAL]: z.number(),
+                [CustomerTypes.INDUSTRIAL]: z.number(),
+                [CustomerTypes.PUBLIC_FACILITY]: z.number(),
+                [CustomerTypes.OTHER]: z.number(),
+              })
+              .describe("The consumption by customer type in the month"),
+          })
+          .strict()
+      )
+      .describe("The monthly consumption for a given year"),
+    topConsumers: z
+      .array(
+        z.object({
+          customerName: z.string().describe("The name of the customer"),
+          totalKWh: z
+            .number()
+            .describe("The total kWh consumed by the customer in the month"),
+        })
+      )
+      .describe("The top consumers for a given year"),
+  })
+  .strict();
+
 // TypeScript Types Inferred from Response Schemas
 export type CustomerCountResponse = z.infer<typeof CustomerCountResponseSchema>;
 export type MonthlyPaymentTotalsResponse = z.infer<
@@ -198,4 +247,7 @@ export type MonthlyEnergySummaryResponse = z.infer<
 >;
 export type DailyEnergySummaryResponse = z.infer<
   typeof DailyEnergySummaryResponseSchema
+>;
+export type YearlyEnergySummaryResponse = z.infer<
+  typeof YearlyEnergySummaryResponseSchema
 >;
