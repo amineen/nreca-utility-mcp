@@ -15,14 +15,6 @@ connectToDatabase();
 const app = express();
 app.use(express.json());
 //TODO: Testing MongoDB Services
-console.time("getYearlyEnergySummary");
-getYearlyEnergySummary({
-    utilityId: "679dc04aac3872bc0b6fff25",
-    year: "2025",
-}).then((result) => {
-    console.log(result);
-    console.timeEnd("getYearlyEnergySummary");
-});
 // getDailyEnergySummary({
 //   utilityId: "679dc04aac3872bc0b6fff25",
 //   date: "2025-03-01",
