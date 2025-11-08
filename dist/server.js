@@ -15,11 +15,13 @@ connectToDatabase();
 const app = express();
 app.use(express.json());
 //TODO: Testing MongoDB Services
-// getDailyEnergySummary({
+// getYearlyPaymentTotals({
 //   utilityId: "679dc04aac3872bc0b6fff25",
-//   date: "2025-03-01",
+//   year: "2025",
 // }).then((result) => {
+//   console.time("getYearlyPaymentTotals");
 //   console.log(result);
+//   console.timeEnd("getYearlyPaymentTotals");
 // });
 //add a root route to provide welcome message and information about the server
 app.get("/", (req, res) => {
@@ -47,58 +49,79 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
             {
                 name: MCPToolNames.GET_UTILITY_INFO,
                 description: "Get the information like utility name, acronym, country, system type, system description, and system components about a given utility",
-                inputSchema: zodToJsonSchema(GetUtilityInfoRequestSchema, {
-                    name: MCPToolNames.GET_UTILITY_INFO,
-                    $refStrategy: "none",
-                }),
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetUtilityInfoRequestSchema, {
+                        name: MCPToolNames.GET_UTILITY_INFO,
+                        $refStrategy: "none",
+                    }),
+                },
             },
             {
                 name: MCPToolNames.GET_CUSTOMERS_COUNT,
                 description: "Get the number of customers for a given utility",
-                inputSchema: zodToJsonSchema(GetCustomersCountSchema, {
-                    name: MCPToolNames.GET_CUSTOMERS_COUNT,
-                    $refStrategy: "none",
-                }),
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetCustomersCountSchema, {
+                        name: MCPToolNames.GET_CUSTOMERS_COUNT,
+                        $refStrategy: "none",
+                    }),
+                },
             },
             {
                 name: MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY,
                 description: "Get the monthly energy summary for a given utility.",
-                inputSchema: zodToJsonSchema(GetMonthlyEnergySummarySchema, {
-                    name: MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY,
-                    $refStrategy: "none",
-                }),
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetMonthlyEnergySummarySchema, {
+                        name: MCPToolNames.GET_MONTHLY_ENERGY_SUMMARY,
+                        $refStrategy: "none",
+                    }),
+                },
             },
             {
                 name: MCPToolNames.GET_DAILY_ENERGY_SUMMARY,
                 description: "Get the daily energy summary for a given utility.",
-                inputSchema: zodToJsonSchema(GetDailyEnergySummarySchema, {
-                    name: MCPToolNames.GET_DAILY_ENERGY_SUMMARY,
-                    $refStrategy: "none",
-                }),
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetDailyEnergySummarySchema, {
+                        name: MCPToolNames.GET_DAILY_ENERGY_SUMMARY,
+                        $refStrategy: "none",
+                    }),
+                },
             },
             {
                 name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
                 description: "Get the monthly payment totals for a given utility",
-                inputSchema: zodToJsonSchema(GetMonthlyPaymentTotalsSchema, {
-                    name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
-                    $refStrategy: "none",
-                }),
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetMonthlyPaymentTotalsSchema, {
+                        name: MCPToolNames.GET_MONTHLY_PAYMENT_TOTALS,
+                        $refStrategy: "none",
+                    }),
+                },
             },
             {
                 name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
                 description: "Get the yearly energy summary for a given utility. Returns monthly consumption data for all 12 months and top consumers for the year.",
-                inputSchema: zodToJsonSchema(GetYearlyEnergySummarySchema, {
-                    name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
-                    $refStrategy: "none",
-                }),
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetYearlyEnergySummarySchema, {
+                        name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
+                        $refStrategy: "none",
+                    }),
+                },
             },
             {
                 name: MCPToolNames.GET_YEARLY_PAYMENT_TOTALS,
                 description: "Get the yearly payment totals for a given utility. Returns monthly payment data for all 12 months broken down by customer type, plus total for the year.",
-                inputSchema: zodToJsonSchema(GetYearlyPaymentTotalsSchema, {
-                    name: MCPToolNames.GET_YEARLY_PAYMENT_TOTALS,
-                    $refStrategy: "none",
-                }),
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetYearlyPaymentTotalsSchema, {
+                        name: MCPToolNames.GET_YEARLY_PAYMENT_TOTALS,
+                        $refStrategy: "none",
+                    }),
+                },
             },
         ],
     };
