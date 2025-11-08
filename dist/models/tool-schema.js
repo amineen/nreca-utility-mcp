@@ -51,6 +51,13 @@ export const GetYearlyEnergySummarySchema = GetUtilityInfoRequestSchema.extend({
         .max(4, "Year must be in the format YYYY")
         .describe("The year to get the yearly energy summary for"),
 }).strict();
+export const GetYearlyPaymentTotalsSchema = GetUtilityInfoRequestSchema.extend({
+    year: z
+        .string()
+        .min(4, "Year must be in the format YYYY")
+        .max(4, "Year must be in the format YYYY")
+        .describe("The year to get the yearly payment totals for"),
+}).strict();
 //Response Schemas for the MCP Tools
 export const UtilityInfoResponseSchema = z
     .object({
@@ -178,6 +185,54 @@ export const YearlyEnergySummaryResponseSchema = z
             .describe("The total kWh consumed by the customer in the month"),
     }))
         .describe("The top consumers for a given year"),
+})
+    .strict();
+export const YearlyPaymentTotalsResponseSchema = z
+    .object({
+    monthlyPayments: z
+        .array(z
+        .object({
+        month: z
+            .string()
+            .describe("The month of the yearly payment totals"),
+        totalAmount: z
+            .number()
+            .describe("The total payment amount for the month"),
+        totalKWh: z
+            .number()
+            .describe("The total kWh associated with payments in the month"),
+        currency: z
+            .string()
+            .describe("The currency of the payment amounts"),
+        paymentsByCustomerType: z
+            .array(z
+            .object({
+            customer_type: z
+                .string()
+                .describe("The customer type for the payment"),
+            totalAmount: z
+                .number()
+                .describe("The total payment amount for this customer type"),
+            totalKWh: z
+                .number()
+                .describe("The total kWh for this customer type"),
+        })
+            .strict())
+            .describe("Payment breakdown by customer type for the month"),
+    })
+        .strict())
+        .describe("The monthly payment totals for a given year"),
+    totalForYear: z
+        .object({
+        totalAmount: z
+            .number()
+            .describe("The total payment amount for the entire year"),
+        totalKWh: z
+            .number()
+            .describe("The total kWh associated with payments for the entire year"),
+        currency: z.string().describe("The currency of the payment amounts"),
+    })
+        .describe("The total payment summary for the year"),
 })
     .strict();
 //# sourceMappingURL=tool-schema.js.map

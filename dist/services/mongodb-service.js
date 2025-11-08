@@ -410,4 +410,108 @@ export const getYearlyEnergySummary = async (request) => {
         topConsumers: topConsumersResult,
     };
 };
+export const getYearlyPaymentTotals = async (request) => {
+    const { utilityId, year } = request;
+    // Generate all months for the given year
+    const months = Array.from({ length: 12 }, (_, i) => {
+        const month = (i + 1).toString().padStart(2, "0");
+        return `${year}-${month}`;
+    });
+    // Calculate date range for the entire year
+    const startOfYear = new Date(`${year}-01-01T00:00:00Z`);
+    const endOfYear = new Date(`${year}-12-31T23:59:59Z`);
+    // Create shared match condition
+    const yearMatchCondition = {
+        service_area_id: new Types.ObjectId(utilityId),
+        timestamp: { $gte: startOfYear, $lte: endOfYear },
+    };
+    // Run aggregation to get monthly payment data
+    const aggregationResult = await PaymentSchema.aggregate([
+        {
+            $match: yearMatchCondition,
+        },
+        {
+            $project: {
+                month: {
+                    $dateToString: { format: "%Y-%m", date: "$timestamp" },
+                },
+                external_id: 1,
+                amount: 1,
+            },
+        },
+        {
+            $addFields: {
+                customer_type: { $arrayElemAt: [{ $split: ["$external_id", "-"] }, 0] },
+                amountValue: { $toDouble: "$amount.value" },
+                kWh: { $ifNull: ["$amount.kWh", 0] },
+            },
+        },
+        {
+            $group: {
+                _id: {
+                    month: "$month",
+                    customer_type: "$customer_type",
+                },
+                totalAmount: { $sum: "$amountValue" },
+                totalKWh: { $sum: "$kWh" },
+                currency: { $first: "$amount.currency" },
+            },
+        },
+        {
+            $group: {
+                _id: "$_id.month",
+                totalAmount: { $sum: "$totalAmount" },
+                totalKWh: { $sum: "$totalKWh" },
+                currency: { $first: "$currency" },
+                paymentsByCustomerType: {
+                    $push: {
+                        customer_type: "$_id.customer_type",
+                        totalAmount: "$totalAmount",
+                        totalKWh: "$totalKWh",
+                    },
+                },
+            },
+        },
+        {
+            $sort: { _id: 1 },
+        },
+    ]);
+    // Convert to Map for O(1) lookup
+    const monthDataMap = new Map(aggregationResult.map((item) => [item._id, item]));
+    // Build monthly payments array with all 12 months
+    let yearTotalAmount = 0;
+    let yearTotalKWh = 0;
+    let currency = "USD"; // Default currency
+    const monthlyPayments = months.map((month) => {
+        const monthData = monthDataMap.get(month);
+        if (monthData) {
+            yearTotalAmount += monthData.totalAmount;
+            yearTotalKWh += monthData.totalKWh;
+            currency = monthData.currency || currency;
+            return {
+                month,
+                totalAmount: monthData.totalAmount,
+                totalKWh: monthData.totalKWh,
+                currency: monthData.currency,
+                paymentsByCustomerType: monthData.paymentsByCustomerType,
+            };
+        }
+        // Return empty data for months with no payments
+        return {
+            month,
+            totalAmount: 0,
+            totalKWh: 0,
+            currency,
+            paymentsByCustomerType: [],
+        };
+    });
+    return {
+        monthlyPayments,
+        totalForYear: {
+            totalAmount: yearTotalAmount,
+            totalKWh: yearTotalKWh,
+            currency,
+        },
+    };
+};
 //# sourceMappingURL=mongodb-service.js.map

@@ -5,9 +5,9 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { ListToolsRequestSchema, CallToolRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { connectToDatabase, isDBConnected, } from "./configurations/db-config.js";
-import { getCustomersCount, getDailyEnergySummary, getMonthlyEnergySummary, getMonthlyPaymentTotals, getUtilityInfo, getYearlyEnergySummary, } from "./services/mongodb-service.js";
+import { getCustomersCount, getDailyEnergySummary, getMonthlyEnergySummary, getMonthlyPaymentTotals, getUtilityInfo, getYearlyEnergySummary, getYearlyPaymentTotals, } from "./services/mongodb-service.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { CustomerCountResponseSchema, DailyEnergySummaryResponseSchema, GetCustomersCountSchema, GetDailyEnergySummarySchema, GetMonthlyEnergySummarySchema, GetMonthlyPaymentTotalsSchema, GetUtilityInfoRequestSchema, GetYearlyEnergySummarySchema, MonthlyEnergySummaryResponseSchema, MonthlyPaymentTotalsResponseSchema, UtilityInfoResponseSchema, YearlyEnergySummaryResponseSchema, } from "./models/tool-schema.js";
+import { CustomerCountResponseSchema, DailyEnergySummaryResponseSchema, GetCustomersCountSchema, GetDailyEnergySummarySchema, GetMonthlyEnergySummarySchema, GetMonthlyPaymentTotalsSchema, GetUtilityInfoRequestSchema, GetYearlyEnergySummarySchema, GetYearlyPaymentTotalsSchema, MonthlyEnergySummaryResponseSchema, MonthlyPaymentTotalsResponseSchema, UtilityInfoResponseSchema, YearlyEnergySummaryResponseSchema, YearlyPaymentTotalsResponseSchema, } from "./models/tool-schema.js";
 import { MCPToolNames } from "./services/util.js";
 import { ZodError } from "zod";
 dotenv.config();
@@ -89,6 +89,14 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
                 description: "Get the yearly energy summary for a given utility. Returns monthly consumption data for all 12 months and top consumers for the year.",
                 inputSchema: zodToJsonSchema(GetYearlyEnergySummarySchema, {
                     name: MCPToolNames.GET_YEARLY_ENERGY_SUMMARY,
+                    $refStrategy: "none",
+                }),
+            },
+            {
+                name: MCPToolNames.GET_YEARLY_PAYMENT_TOTALS,
+                description: "Get the yearly payment totals for a given utility. Returns monthly payment data for all 12 months broken down by customer type, plus total for the year.",
+                inputSchema: zodToJsonSchema(GetYearlyPaymentTotalsSchema, {
+                    name: MCPToolNames.GET_YEARLY_PAYMENT_TOTALS,
                     $refStrategy: "none",
                 }),
             },
@@ -193,6 +201,22 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const result = await getYearlyEnergySummary(validatedArgs);
                 //validate the output with zod
                 const validatedResult = YearlyEnergySummaryResponseSchema.parse(result);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(validatedResult, null, 2),
+                        },
+                    ],
+                };
+            }
+            case MCPToolNames.GET_YEARLY_PAYMENT_TOTALS: {
+                //validate args with zod
+                const validatedArgs = GetYearlyPaymentTotalsSchema.parse(args);
+                //call the service
+                const result = await getYearlyPaymentTotals(validatedArgs);
+                //validate the output with zod
+                const validatedResult = YearlyPaymentTotalsResponseSchema.parse(result);
                 return {
                     content: [
                         {
