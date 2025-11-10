@@ -17,6 +17,26 @@ export const getUtilityInfo = async (request) => {
     }).lean();
     return utilityInfo;
 };
+export const getUtilitiesList = async (request) => {
+    const utilities = await UtilitySchema.find({}, {
+        _id: 1,
+        name: 1,
+        acronym: 1,
+        country: 1,
+        systemType: 1,
+        systemDescription: 1,
+        systemComponents: 1,
+    }).lean();
+    return utilities.map((utility) => ({
+        id: utility._id.toString(),
+        name: utility.name,
+        acronym: utility.acronym,
+        country: utility.country,
+        systemType: utility.systemType,
+        systemDescription: utility.systemDescription,
+        systemComponents: utility.systemComponents,
+    }));
+};
 export const getCustomersCount = async (request) => {
     const { utilityId, allCustomers } = request;
     // Build the match stage

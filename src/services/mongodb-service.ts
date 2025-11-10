@@ -14,6 +14,8 @@ import {
   GetYearlyEnergySummaryRequest,
   YearlyPaymentTotalsResponse,
   GetYearlyPaymentTotalsRequest,
+  UtilitiesListResponse,
+  GetUtilitiesListRequest,
 } from "../models/tool-schema.js";
 import { CustomerType, CustomerTypes } from "../models/types.js";
 import PaymentSchema from "../models/PaymentSchema.js";
@@ -39,6 +41,33 @@ export const getUtilityInfo = async (
   ).lean();
 
   return utilityInfo as unknown as UtilityInfoResponse;
+};
+
+export const getUtilitiesList = async (
+  request: GetUtilitiesListRequest
+): Promise<UtilitiesListResponse> => {
+  const utilities = await UtilitySchema.find(
+    {},
+    {
+      _id: 1,
+      name: 1,
+      acronym: 1,
+      country: 1,
+      systemType: 1,
+      systemDescription: 1,
+      systemComponents: 1,
+    }
+  ).lean();
+
+  return utilities.map((utility) => ({
+    id: utility._id.toString(),
+    name: utility.name,
+    acronym: utility.acronym,
+    country: utility.country,
+    systemType: utility.systemType,
+    systemDescription: utility.systemDescription,
+    systemComponents: utility.systemComponents,
+  })) as UtilitiesListResponse;
 };
 
 export const getCustomersCount = async (

@@ -58,6 +58,7 @@ export const GetYearlyPaymentTotalsSchema = GetUtilityInfoRequestSchema.extend({
         .max(4, "Year must be in the format YYYY")
         .describe("The year to get the yearly payment totals for"),
 }).strict();
+export const GetUtilitiesListSchema = z.object({}).strict();
 //Response Schemas for the MCP Tools
 export const UtilityInfoResponseSchema = z
     .object({
@@ -235,4 +236,23 @@ export const YearlyPaymentTotalsResponseSchema = z
         .describe("The total payment summary for the year"),
 })
     .strict();
+export const UtilitiesListResponseSchema = z.array(z
+    .object({
+    id: z.string().describe("The ID of the utility"),
+    name: z.string().describe("The name of the utility"),
+    acronym: z.string().describe("The acronym of the utility"),
+    country: z.string().describe("The country where the utility is located"),
+    systemType: z
+        .string()
+        .describe("The generation technology used by the utility"),
+    systemDescription: z
+        .string()
+        .describe("The description of the generation technology used by the utility"),
+    systemComponents: z.array(z.object({
+        component: z.string().describe("The component of the system"),
+        capacity: z.number().describe("The capacity of the system component"),
+        unit: z.string().describe("The unit of the component's capacity"),
+    })),
+})
+    .strict());
 //# sourceMappingURL=tool-schema.js.map

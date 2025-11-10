@@ -5,9 +5,9 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { ListToolsRequestSchema, CallToolRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { connectToDatabase, isDBConnected, } from "./configurations/db-config.js";
-import { getCustomersCount, getDailyEnergySummary, getMonthlyEnergySummary, getMonthlyPaymentTotals, getUtilityInfo, getYearlyEnergySummary, getYearlyPaymentTotals, } from "./services/mongodb-service.js";
+import { getCustomersCount, getDailyEnergySummary, getMonthlyEnergySummary, getMonthlyPaymentTotals, getUtilitiesList, getUtilityInfo, getYearlyEnergySummary, getYearlyPaymentTotals, } from "./services/mongodb-service.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { CustomerCountResponseSchema, DailyEnergySummaryResponseSchema, GetCustomersCountSchema, GetDailyEnergySummarySchema, GetMonthlyEnergySummarySchema, GetMonthlyPaymentTotalsSchema, GetUtilityInfoRequestSchema, GetYearlyEnergySummarySchema, GetYearlyPaymentTotalsSchema, MonthlyEnergySummaryResponseSchema, MonthlyPaymentTotalsResponseSchema, UtilityInfoResponseSchema, YearlyEnergySummaryResponseSchema, YearlyPaymentTotalsResponseSchema, } from "./models/tool-schema.js";
+import { CustomerCountResponseSchema, DailyEnergySummaryResponseSchema, GetCustomersCountSchema, GetDailyEnergySummarySchema, GetMonthlyEnergySummarySchema, GetMonthlyPaymentTotalsSchema, GetUtilitiesListSchema, GetUtilityInfoRequestSchema, GetYearlyEnergySummarySchema, GetYearlyPaymentTotalsSchema, MonthlyEnergySummaryResponseSchema, MonthlyPaymentTotalsResponseSchema, UtilitiesListResponseSchema, UtilityInfoResponseSchema, YearlyEnergySummaryResponseSchema, YearlyPaymentTotalsResponseSchema, } from "./models/tool-schema.js";
 import { MCPToolNames } from "./services/util.js";
 import { ZodError } from "zod";
 dotenv.config();
@@ -53,6 +53,17 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
                     type: "object",
                     ...zodToJsonSchema(GetUtilityInfoRequestSchema, {
                         name: MCPToolNames.GET_UTILITY_INFO,
+                        $refStrategy: "none",
+                    }),
+                },
+            },
+            {
+                name: MCPToolNames.GET_UTILITIES_LIST,
+                description: "Get the list of all utilities in the platform with their details including id, name, acronym, country, and system information",
+                inputSchema: {
+                    type: "object",
+                    ...zodToJsonSchema(GetUtilitiesListSchema, {
+                        name: MCPToolNames.GET_UTILITIES_LIST,
                         $refStrategy: "none",
                     }),
                 },
@@ -160,6 +171,22 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const result = await getUtilityInfo(validatedArgs);
                 //validate the output with zod
                 const validatedResult = UtilityInfoResponseSchema.parse(result);
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(validatedResult, null, 2),
+                        },
+                    ],
+                };
+            }
+            case MCPToolNames.GET_UTILITIES_LIST: {
+                //validate args with zod
+                const validatedArgs = GetUtilitiesListSchema.parse(args);
+                //call the service
+                const result = await getUtilitiesList(validatedArgs);
+                //validate the output with zod
+                const validatedResult = UtilitiesListResponseSchema.parse(result);
                 return {
                     content: [
                         {

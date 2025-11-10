@@ -74,6 +74,8 @@ export const GetYearlyPaymentTotalsSchema = GetUtilityInfoRequestSchema.extend({
     .describe("The year to get the yearly payment totals for"),
 }).strict();
 
+export const GetUtilitiesListSchema = z.object({}).strict();
+
 // TypeScript Types Inferred from Zod Schemas
 export type GetCustomersCountRequest = z.infer<typeof GetCustomersCountSchema>;
 export type GetMonthlyPaymentTotalsRequest = z.infer<
@@ -95,6 +97,7 @@ export type GetYearlyEnergySummaryRequest = z.infer<
 export type GetYearlyPaymentTotalsRequest = z.infer<
   typeof GetYearlyPaymentTotalsSchema
 >;
+export type GetUtilitiesListRequest = z.infer<typeof GetUtilitiesListSchema>;
 
 //Response Schemas for the MCP Tools
 export const UtilityInfoResponseSchema = z
@@ -305,6 +308,32 @@ export const YearlyPaymentTotalsResponseSchema = z
   })
   .strict();
 
+export const UtilitiesListResponseSchema = z.array(
+  z
+    .object({
+      id: z.string().describe("The ID of the utility"),
+      name: z.string().describe("The name of the utility"),
+      acronym: z.string().describe("The acronym of the utility"),
+      country: z.string().describe("The country where the utility is located"),
+      systemType: z
+        .string()
+        .describe("The generation technology used by the utility"),
+      systemDescription: z
+        .string()
+        .describe(
+          "The description of the generation technology used by the utility"
+        ),
+      systemComponents: z.array(
+        z.object({
+          component: z.string().describe("The component of the system"),
+          capacity: z.number().describe("The capacity of the system component"),
+          unit: z.string().describe("The unit of the component's capacity"),
+        })
+      ),
+    })
+    .strict()
+);
+
 // TypeScript Types Inferred from Response Schemas
 export type CustomerCountResponse = z.infer<typeof CustomerCountResponseSchema>;
 export type MonthlyPaymentTotalsResponse = z.infer<
@@ -321,4 +350,7 @@ export type YearlyEnergySummaryResponse = z.infer<
 >;
 export type YearlyPaymentTotalsResponse = z.infer<
   typeof YearlyPaymentTotalsResponseSchema
+>;
+export type UtilitiesListResponse = z.infer<
+  typeof UtilitiesListResponseSchema
 >;
